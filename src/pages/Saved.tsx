@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { useCodeSnippets } from '../hooks/useCodeSnippets';
+import { useSupabaseCodeSnippets } from '../hooks/useSupabaseCodeSnippets';
 import { useAuth } from '../contexts/AuthContext';
 import CodeSnippetCard from '../components/CodeSnippetCard';
-import { Search, BookmarkCheck, Hash, Filter } from 'lucide-react';
+import { Search, BookmarkCheck, Hash, Filter, Loader2 } from 'lucide-react';
 
 const Saved: React.FC = () => {
   const { user } = useAuth();
@@ -11,12 +11,14 @@ const Saved: React.FC = () => {
     getSavedSnippets,
     unsaveSnippet,
     deleteSnippet,
-  } = useCodeSnippets();
+    isLoading,
+    error,
+  } = useSupabaseCodeSnippets();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const savedSnippets = user ? getSavedSnippets(user.id) : [];
+  const savedSnippets = getSavedSnippets();
 
   // Get all unique hashtags from saved snippets
   const allTags = Array.from(
@@ -40,7 +42,7 @@ const Saved: React.FC = () => {
 
   const handleUnsaveSnippet = (snippetId: string) => {
     if (user) {
-      unsaveSnippet(user.id, snippetId);
+      unsaveSnippet(snippetId);
     }
   };
 
@@ -56,6 +58,28 @@ const Saved: React.FC = () => {
     return (
       <div className="text-center py-12">
         <p className="text-lg text-muted-foreground">Please log in to view saved snippets</p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-lg">Loading saved snippets...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-500 mb-4">
+          <p className="text-lg mb-2">Error loading saved snippets</p>
+          <p className="text-sm">{error.message}</p>
+        </div>
       </div>
     );
   }

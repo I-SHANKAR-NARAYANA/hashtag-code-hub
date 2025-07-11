@@ -14,7 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      code_snippets: {
+        Row: {
+          author: string
+          code: string
+          created_at: string
+          hashtags: string[]
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author: string
+          code: string
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          code?: string
+          created_at?: string
+          hashtags?: string[]
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_snippets: {
+        Row: {
+          created_at: string
+          id: string
+          snippet_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          snippet_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          snippet_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_snippets_snippet_id_fkey"
+            columns: ["snippet_id"]
+            isOneToOne: false
+            referencedRelation: "code_snippets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

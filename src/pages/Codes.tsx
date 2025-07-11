@@ -1,21 +1,23 @@
 
 import React, { useState } from 'react';
-import { useCodeSnippets } from '../hooks/useCodeSnippets';
+import { useSupabaseCodeSnippets } from '../hooks/useSupabaseCodeSnippets';
 import { useAuth } from '../contexts/AuthContext';
 import CodeSnippetCard from '../components/CodeSnippetCard';
 import CreateSnippetForm from '../components/CreateSnippetForm';
-import { Search, Plus, Filter, Hash } from 'lucide-react';
+import { Search, Plus, Filter, Hash, Loader2 } from 'lucide-react';
 
 const Codes: React.FC = () => {
   const { user } = useAuth();
   const {
     snippets,
+    isLoading,
+    error,
     addSnippet,
     deleteSnippet,
     saveSnippet,
     unsaveSnippet,
     isSnippetSaved,
-  } = useCodeSnippets();
+  } = useSupabaseCodeSnippets();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,13 +50,13 @@ const Codes: React.FC = () => {
 
   const handleSaveSnippet = (snippetId: string) => {
     if (user) {
-      saveSnippet(user.id, snippetId);
+      saveSnippet(snippetId);
     }
   };
 
   const handleUnsaveSnippet = (snippetId: string) => {
     if (user) {
-      unsaveSnippet(user.id, snippetId);
+      unsaveSnippet(snippetId);
     }
   };
 
@@ -65,6 +67,28 @@ const Codes: React.FC = () => {
         : [...prev, tag]
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-lg">Loading snippets...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-500 mb-4">
+          <p className="text-lg mb-2">Error loading snippets</p>
+          <p className="text-sm">{error.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -77,13 +101,15 @@ const Codes: React.FC = () => {
           </p>
         </div>
         
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2 self-start sm:self-auto"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Create Snippet</span>
-        </button>
+        {user && (
+          <button
+            onClick={() => setShowCreateForm(true)}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center space-x-2 self-start sm:self-auto"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Create Snippet</span>
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -151,7 +177,7 @@ const Codes: React.FC = () => {
             <CodeSnippetCard
               key={snippet.id}
               snippet={snippet}
-              isSaved={user ? isSnippetSaved(user.id, snippet.id) : false}
+              isSaved={user ? isSnippetSaved(snippet.id) : false}
               onSave={handleSaveSnippet}
               onUnsave={handleUnsaveSnippet}
               onDelete={deleteSnippet}
@@ -173,7 +199,7 @@ const Codes: React.FC = () => {
               </div>
             )}
           </div>
-          {(!searchQuery && selectedTags.length === 0) && (
+          {(!searchQuery && selectedTags.length === 0 && user) && (
             <button
               onClick={() => setShowCreateForm(true)}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"

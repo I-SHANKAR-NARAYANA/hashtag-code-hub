@@ -2,15 +2,25 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Code, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Code, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 
 const Home: React.FC = () => {
-  const { login, isAuthenticated } = useAuth();
-  const [username, setUsername] = useState('');
+  const { login, signup, isAuthenticated, isLoading } = useAuth();
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isSignupMode, setIsSignupMode] = useState(false);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/codes" replace />;
@@ -18,18 +28,30 @@ const Home: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setIsSubmitting(true);
     setError('');
 
     try {
-      const success = await login(username, password);
-      if (!success) {
-        setError('Invalid username or password');
+      let success = false;
+      
+      if (isSignupMode) {
+        success = await signup(email, password, username);
+        if (success) {
+          setError('Account created! Please check your email to verify your account.');
+          return;
+        } else {
+          setError('Failed to create account. Please try again.');
+        }
+      } else {
+        success = await login(email, password);
+        if (!success) {
+          setError('Invalid email or password');
+        }
       }
     } catch (err) {
-      setError('Login failed. Please try again.');
+      setError(isSignupMode ? 'Signup failed. Please try again.' : 'Login failed. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -51,24 +73,41 @@ const Home: React.FC = () => {
           </p>
         </div>
 
-        {/* Login Form */}
+        {/* Auth Form */}
         <div className="bg-card border rounded-lg p-6 shadow-lg">
           <h2 className="text-xl font-semibold mb-6 flex items-center space-x-2">
-            <LogIn className="h-5 w-5" />
-            <span>Welcome Back</span>
+            {isSignupMode ? <UserPlus className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+            <span>{isSignupMode ? 'Create Account' : 'Welcome Back'}</span>
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignupMode && (
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium mb-2">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                  className="w-full p-3 bg-secondary border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
+                  required={isSignupMode}
+                />
+              </div>
+            )}
+
             <div>
-              <label htmlFor="username" className="block text-sm font-medium mb-2">
-                Username
+              <label htmlFor="email" className="block text-sm font-medium mb-2">
+                Email
               </label>
               <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
                 className="w-full p-3 bg-secondary border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                 required
               />
@@ -87,6 +126,7 @@ const Home: React.FC = () => {
                   placeholder="Enter your password"
                   className="w-full p-3 bg-secondary border rounded-lg pr-10 focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
                   required
+                  minLength={6}
                 />
                 <button
                   type="button"
@@ -99,33 +139,47 @@ const Home: React.FC = () => {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm">
+              <div className={`p-3 border rounded-lg text-sm ${
+                error.includes('check your email') 
+                  ? 'bg-green-500/10 border-green-500/20 text-green-500'
+                  : 'bg-red-500/10 border-red-500/20 text-red-500'
+              }`}>
                 {error}
               </div>
             )}
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full p-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
               ) : (
                 <>
-                  <LogIn className="h-4 w-4" />
-                  <span>Sign In</span>
+                  {isSignupMode ? <UserPlus className="h-4 w-4" /> : <LogIn className="h-4 w-4" />}
+                  <span>{isSignupMode ? 'Create Account' : 'Sign In'}</span>
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-muted/30 rounded-lg">
-            <p className="text-sm text-muted-foreground mb-2">Demo credentials:</p>
-            <div className="text-xs text-muted-foreground">
-              <p>Username: <span className="font-mono">demo</span></p>
-              <p>Password: <span className="font-mono">password</span></p>
-            </div>
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setIsSignupMode(!isSignupMode);
+                setError('');
+                setEmail('');
+                setPassword('');
+                setUsername('');
+              }}
+              className="text-sm text-muted-foreground hover:text-foreground underline"
+            >
+              {isSignupMode 
+                ? 'Already have an account? Sign in' 
+                : "Don't have an account? Sign up"
+              }
+            </button>
           </div>
         </div>
       </div>
