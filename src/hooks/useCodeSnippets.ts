@@ -8,9 +8,9 @@ export const useCodeSnippets = () => {
 
   useEffect(() => {
     // Load snippets from localStorage
-    const savedSnippetsData = localStorage.getItem('codeSnippets');
-    if (savedSnippetsData) {
-      const parsed = JSON.parse(savedSnippetsData);
+    const storedSnippetsData = localStorage.getItem('codeSnippets');
+    if (storedSnippetsData) {
+      const parsed = JSON.parse(storedSnippetsData);
       setSnippets(parsed.map((s: any) => ({ ...s, createdAt: new Date(s.createdAt) })));
     } else {
       // Initialize with some sample data
